@@ -3,7 +3,19 @@ from pymongo import MongoClient
 import re
 from flask_cors import CORS
 from janusgraph_client import get_janusgraph_connection
+import pickle
+import networkx as nx
+import pandas as pd
+import json
 
+with open(r'C:\\Users\\Omkar Borker\\OneDrive\\Desktop\\PS12-Graphilic\\Model\\node2vec_for_bipartite.pkl','rb') as f:
+    model = pickle.load(f)
+
+with open(r'C:\\Users\\Omkar Borker\\OneDrive\\Desktop\\PS12-Graphilic\\Data\\user_user_graph.json','rb') as f:
+    data = json.load(f)
+graph = nx.node_link_graph(data)
+
+dataset = pd.read_csv(r"C:\\Users\\Omkar Borker\\OneDrive\\Desktop\\PS12-Graphilic\\Data\\user-user-dataframe.csv")
 
 MONGO_URL = "mongodb+srv://zubinshah:dbUsUK95LA6^@hackrx.dl9muyr.mongodb.net/"
 client = MongoClient(MONGO_URL)
@@ -12,6 +24,20 @@ collection = client["HackRx"]["MetaData"]
 app = Flask(__name__)
 app.config.from_object('config')
 cors = CORS(app)
+
+def get_similarity_list(model,customerID,list_items):
+    cust_embed = model.wv[customerID]
+    final_items = {}
+
+    for i in list_items:
+        i = re.findall(r'\d+', i)
+        i = ''.join(i)
+        try:
+            item_embedding = model.wv[i]
+            final_items[i] = int(cust_embed.dot(item_embedding))
+        except KeyError:
+            continue
+    return final_items
 
 @app.route('/login', methods=['POST'])
 def handle_login_request():
@@ -116,40 +142,50 @@ def books_by_category():
 
     return jsonify({"category_choice": category_choice, "matching_books": books_data}), 200
 
-@app.route('/recommend_similar', methods=['GET'])
+# @app.route('/recommend_similar', methods=['GET'])
+# def recommend_similar():
+#     # ASIN of the main product
+#     cust_id = "A2JW67OY8U6HHK"
+
+#     # Find the document for the main ASIN
+#     neighbours = list(graph.neighbors(cust_id))
+#     list_items = []
+#     for node in neighbours:
+#         list_items.append(dataset.loc[dataset['customer id']==node,'ASIN'].iloc[0])
+
+#     if len(list_items) < 0:
+#         return jsonify({"error": "Main product not found"}), 200
+
+#     # Retrieve the ASIN IDs of similar items from the "similar" column
+#     prediction = get_similarity_list(model,'A2JW67OY8U6HHK',list_items)
+
+#     return  prediction
+
+@app.route('/recommend_similar', methods=['POST'])
 def recommend_similar():
-    # ASIN of the main product
-    main_asin = "0827229534"
+    try:
+        data = request.get_json()
+        cust_id = data.get("cust_id")
+        if not cust_id:
+            return jsonify({"error": "Username (cust_id) not provided"}), 400
 
-    # Find the document for the main ASIN
-    main_product = collection.find_one({"ASIN": main_asin})
+        # Find the document for the main ASIN
+        neighbours = list(graph.neighbors(cust_id))
+        list_items = []
+        for node in neighbours:
+            list_items.append(dataset.loc[dataset['customer id'] == node, 'ASIN'].iloc[0])
 
-    if not main_product:
-        return jsonify({"error": "Main product not found"}), 404
+        # If there are no similar items, return an empty list
+        if not list_items:
+            return jsonify({"error": "No similar items found"}), 200
 
-    # Retrieve the ASIN IDs of similar items from the "similar" column
-    similar_asins = main_product.get("similar", {}).get("ASIN ID", [])
+        # Retrieve the ASIN IDs of similar items from the "similar" column
+        # Replace this with your actual implementation of 'get_similarity_list'
+        prediction = get_similarity_list(model, cust_id, list_items)
 
-    # If there are no similar ASIN IDs, return an empty list
-    if not similar_asins:
-        return jsonify({"message": "No similar items found"}), 200
-
-    # Retrieve information of the first similar item from the ASIN ID
-    similar_item_asin = "0687023955"
-    similar_item = collection.find_one({"ASIN": similar_item_asin})
-
-    # Extract relevant information of the similar item
-    similar_item_title = similar_item.get("title", "")
-    similar_item_group = similar_item.get("group", "")
-    similar_item_salesrank = similar_item.get("salesrank", "")
-
-    return jsonify({
-        "main_asin": main_asin,
-        "similar_item_asin": similar_item_asin,
-        "similar_item_title": similar_item_title,
-        "similar_item_group": similar_item_group,
-        "similar_item_salesrank": similar_item_salesrank
-    }), 200
+        return jsonify({"title":prediction}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
     
 @app.route('/graph-data', methods=['GET'])
 def get_graph_data():

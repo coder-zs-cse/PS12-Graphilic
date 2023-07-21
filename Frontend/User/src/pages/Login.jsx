@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Footer, Navbar } from "../components";
 import Products from "../components/Products";
+import ProductsPage from "./ProductsByID";
 
 const Login = () => {
   const [username, setUsername] = useState("");
   const [message, setMessage] = useState("");
+  const [recommendation, setRecommendation] = useState(null);
 
   const handleUsernameChange = (event) => {
     const inputUsername = event.target.value;
@@ -14,12 +16,12 @@ const Login = () => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-  
+
     // Check if the username is not empty before making the request
     if (!username) {
       return;
     }
-  
+
     // Making the POST request to the backend
     fetch("http://localhost:5000/recommend_to_user", {
       method: "POST",
@@ -44,12 +46,35 @@ const Login = () => {
         setMessage("An error occurred. Please try again later.");
       });
   };
-  
 
-    // Check if 'message' state is '200' and render the Main component
-    if (message === "200") {
-      return < Products/>;
-    }
+  const handleRecommendation = () => {
+    // Making the POST request to the backend to get recommendations
+    fetch("http://localhost:5000/recommend_similar", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ cust_id: username }), // Sending the username as JSON data
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        setRecommendation(data);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        setRecommendation(null);
+      });
+  };
+
+  // Check if 'message' state is '200' and render the Main component
+  if (message === "200") {
+    return <ProductsPage recommendation={recommendation} />;
+  }
   
     return (
       <>
@@ -89,7 +114,7 @@ const Login = () => {
                   </p>
                 </div>
                 <div className="text-center">
-                  <button className="my-2 mx-auto btn btn-dark" type="submit" disabled={!username}>
+                  <button className="my-2 mx-auto btn btn-dark" type="submit" disabled={!username} onClick={handleRecommendation}>
                     Login
                   </button>
                 </div>
