@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from pymongo import MongoClient
 import re
+from flask_cors import CORS
 from janusgraph_client import get_janusgraph_connection
 
 
@@ -10,7 +11,7 @@ collection = client["HackRx"]["MetaData"]
 
 app = Flask(__name__)
 app.config.from_object('config')
-
+cors = CORS(app)
 
 @app.route('/recommend_to_user', methods=['POST'])
 def handle_request():
@@ -18,6 +19,7 @@ def handle_request():
         data = request.json.get('data')
         if data is not None:
             # Bad request
+            print(data)
             return jsonify({"error": "POST requests not allowed"}), 200
         else:
             # Return the custom message for POST request
