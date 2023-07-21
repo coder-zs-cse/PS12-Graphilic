@@ -168,9 +168,11 @@ def books_by_category():
 
 @app.route('/recommend_similar', methods=['POST'])
 def recommend_similar():
-    # ASIN of the main product
-    global search_ASIN
-    main_asin = search_ASIN
+    try:
+        data = request.get_json()
+        cust_id = data.get("cust_id")
+        if not cust_id:
+            return jsonify({"error": "Username (cust_id) not provided"}), 400
 
         # Find the document for the main ASIN
         neighbours = list(graph.neighbors(cust_id))
@@ -186,7 +188,7 @@ def recommend_similar():
         # Replace this with your actual implementation of 'get_similarity_list'
         prediction = get_similarity_list(model, cust_id, list_items)
 
-        return jsonify({"title":prediction}), 200
+        return jsonify(prediction), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
