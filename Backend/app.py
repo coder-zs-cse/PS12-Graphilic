@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from pymongo import MongoClient
 import re
 from flask_cors import CORS
-from janusgraph_client import get_janusgraph_connection
+from query_from_janus import query_vertex_by_id
 
 
 MONGO_URL = "mongodb+srv://zubinshah:dbUsUK95LA6^@hackrx.dl9muyr.mongodb.net/"
@@ -12,6 +12,8 @@ collection = client["HackRx"]["MetaData"]
 app = Flask(__name__)
 app.config.from_object('config')
 cors = CORS(app)
+
+search_ASIN = None
 
 @app.route('/login', methods=['POST'])
 def handle_login_request():
@@ -65,6 +67,7 @@ def handle_item_request():
 
 @app.route('/search_query', methods=['POST'])
 def search_item():
+    global search_ASIN
     try:
         data = request.json.get('data')
         if data is not None:
@@ -79,13 +82,14 @@ def search_item():
             similar_data = []
             for book in similar_books:
                 title = book["title"]
+                ASIN = book["ASIN"]
                 category = book.get("group", "")
                 categories_data = book.get("categories", {}).get("ASIN ID", [])
                 categories = [category.split('|')[-1] for category in categories_data]
 
-                similar_data.append({"title": title, "category": category, "categories": categories})
-
-            return jsonify({"query_title": query_title, "similar_books": similar_data}), 200
+                similar_data.append({"ASIN":ASIN,"title": title, "category": category, "categories": categories})
+            search_ASIN = similar_data[0]["ASIN"]
+            return jsonify({"query_title": query_title, "similar_books": similar_data, "stored": search_ASIN}), 200
         else:
             return jsonify({"error": "Invalid JSON data"}), 400
     except:
@@ -119,50 +123,41 @@ def books_by_category():
 @app.route('/recommend_similar', methods=['GET'])
 def recommend_similar():
     # ASIN of the main product
-    main_asin = "0827229534"
+    global search_ASIN
+    main_asin = search_ASIN
 
     # Find the document for the main ASIN
-    main_product = collection.find_one({"ASIN": main_asin})
+    # main_product = collection.find_one({"ASIN": main_asin})
 
-    if not main_product:
-        return jsonify({"error": "Main product not found"}), 404
+    # if not main_product:
+    #     return jsonify({"error": "Main product not found"}), 404
 
     # Retrieve the ASIN IDs of similar items from the "similar" column
-    similar_asins = main_product.get("similar", {}).get("ASIN ID", [])
+    similar_asins = None
+    if main_asin:
+        similar_asins = query_vertex_by_id(main_asin)
 
     # If there are no similar ASIN IDs, return an empty list
     if not similar_asins:
-        return jsonify({"message": "No similar items found"}), 200
+        return jsonify({"message": "No similar items found", "ASIN": search_ASIN}), 200
 
     # Retrieve information of the first similar item from the ASIN ID
     similar_item_asin = "0687023955"
     similar_item = collection.find_one({"ASIN": similar_item_asin})
-
     # Extract relevant information of the similar item
-    similar_item_title = similar_item.get("title", "")
-    similar_item_group = similar_item.get("group", "")
-    similar_item_salesrank = similar_item.get("salesrank", "")
+    # similar_item_title = similar_item.get("title", "")
+    # similar_item_group = similar_item.get("group", "")
+    # similar_item_salesrank = similar_item.get("salesrank", "")
 
     return jsonify({
         "main_asin": main_asin,
         "similar_item_asin": similar_item_asin,
-        "similar_item_title": similar_item_title,
-        "similar_item_group": similar_item_group,
-        "similar_item_salesrank": similar_item_salesrank
+        "similar_ASIN": similar_asins,
+        # "similar_item_title": similar_item_title,
+        # "similar_item_group": similar_item_group,
+        # "similar_item_salesrank": similar_item_salesrank
     }), 200
     
-@app.route('/graph-data', methods=['GET'])
-def get_graph_data():
-    connection = get_janusgraph_connection()
-    
-    try:
-        g = connection.remote_traversal()
-        # Perform your Gremlin queries using the 'g' object
-        result = g.V().limit(10).valueMap().toList()
-    finally:
-        connection.close()
-    
-    return jsonify(result)
 
 if __name__ == '__main__':
     app.run(debug=True)
