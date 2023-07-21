@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Footer, Navbar } from "../components";
-import Product from "./Item";
-import PropsSender from "./PropsSender";
+import Products from "../components/Products";
 
 const Login = () => {
   const [username, setUsername] = useState("");
@@ -49,7 +48,7 @@ const Login = () => {
 
     // Check if 'message' state is '200' and render the Main component
     if (message === "200") {
-      return <PropsSender />;
+      return < Products/>;
     }
   
     return (
