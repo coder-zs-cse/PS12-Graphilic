@@ -2,21 +2,61 @@ import pandas as pd
 import plotly.express as px
 from dash import Dash, dcc, html, Input, Output
 
+
+x = []
+UserCount = []
+OverallProfit = []
+
+
+
 app = Dash(__name__)
+
+
+
 
 # -- Import and clean data (importing csv into pandas)
 # df = pd.read_csv("intro_bees.csv")
-df = pd.read_csv("Data\reviews1_data.csv")
+file_path = '../../Data/reviews1_data.csv'
+df = pd.read_csv(file_path)
 
-filtered_df = df[(df['month'] == 12 & (df['year']==12))]
-filtered_df = filtered_df.groupby('day')['profit'].mean()
-# df = df.groupby(['day', 'group'])[['profit']].mean()
-df.reset_index(inplace=True)
-print(df[:5])
+print(">",df[:5])
+#filter rows with month 5 and year 2002 and group Books
+filtered_df = df[(df['month'] == 6) & (df['year']== 2000) & (df['group'] == 'Book')]
+filtered_df = filtered_df.sort_values(by=['day'])
+#group by day and get average profit and total count of reviews
+
+filtered_df1 = filtered_df.groupby('day')['profit'].count().rename('Count')
+filtered_df2 = filtered_df.groupby('day')['profit'].mean().rename('Profit')
+
+filtered_df = filtered_df.reset_index()
+filtered_df1 = filtered_df1.reset_index()
+filtered_df2 = filtered_df2.reset_index()
+# filtered_df = df[(df['month'] == 12 & (df['year']== 2000))]
+
+# print(filtered_df[:40])
+
+
+# print("<")
+# print(filtered_df[:5])
+# print()
+# print(filtered_df1[:5])
+# print()
+# print(filtered_df2[:5])
+
+#store day in x
+x = filtered_df['day']
+#store count of reviews in UserCount
+UserCount = filtered_df1['Count'].tolist()
+#store average profit in OverallProfit
+OverallProfit = filtered_df2['Profit'].tolist()
+
 
 # Get unique days and years from the data
-available_days = df['day'].unique()
-available_years = df['year'].unique()
+available_days = filtered_df1['day']
+#sort available days
+# sorted(available_days)
+
+available_years = df['year']
 
 # ------------------------------------------------------------------------------
 # App layout
@@ -82,8 +122,8 @@ def update_graph(selected_day, selected_month, selected_year):
     # Plotly Express bar chart
     fig = px.bar(
         data_frame=dff,
-        x='day',  # Replace 'day' with the appropriate column from your data for the X-axis
-        y='profit',  # Replace 'profit' with the appropriate column for the Y-axis
+        x=x,  # Replace 'day' with the appropriate column from your data for the X-axis
+        y=UserCount,  # Replace 'profit' with the appropriate column for the Y-axis
         labels={'day': 'Day', 'profit': 'Profit'},
         template='plotly_dark'
     )
