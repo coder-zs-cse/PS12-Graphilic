@@ -13,6 +13,20 @@ app = Flask(__name__)
 app.config.from_object('config')
 cors = CORS(app)
 
+@app.route('/login', methods=['POST'])
+def handle_login_request():
+    try:
+        data = request.json.get('data')
+        if data is not None:
+            # Bad request
+            print(data)
+            return jsonify({"message" : "200"}), 200
+        else:
+            # Return the custom message for POST request
+            return jsonify({"this is a bad request"}), 400
+    except:
+        return jsonify({"error": "Invalid JSON data"}), 400
+    
 @app.route('/recommend_to_user', methods=['POST'])
 def handle_request():
     try:
@@ -20,7 +34,7 @@ def handle_request():
         if data is not None:
             # Bad request
             print(data)
-            return jsonify({"error": "POST requests not allowed"}), 200
+            return jsonify({"message" : "200"}), 200
         else:
             # Return the custom message for POST request
             return jsonify({"this is a bad request"}), 400
