@@ -3,7 +3,6 @@ from pymongo import MongoClient
 import re
 from flask_cors import CORS
 from query_from_janus import query_vertex_by_id
-from janusgraph_client import get_janusgraph_connection
 import pickle
 import networkx as nx
 import pandas as pd
@@ -188,7 +187,7 @@ def recommend_similar():
         # Replace this with your actual implementation of 'get_similarity_list'
         prediction = get_similarity_list(model, cust_id, list_items)
 
-        return jsonify(prediction), 200
+        return jsonify(*(prediction.keys())), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
