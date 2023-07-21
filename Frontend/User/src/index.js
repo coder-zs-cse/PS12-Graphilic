@@ -9,6 +9,7 @@ import store from './redux/store';
 
 import { Home, Product, Products, AboutPage, ContactPage, Cart, Login, Register, Checkout, PageNotFound } from "./pages"
 import SearchPage from './pages/SearchPage';
+import ProductPage from './pages/ProductPage';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <BrowserRouter>
@@ -26,6 +27,7 @@ root.render(
         <Route path="*" element={<PageNotFound />} />
         <Route path="/product/*" element={<PageNotFound />} />
         <Route path="/Search" element = {<SearchPage/>}/>
+        <Route path="/Productpage/:id"element = {<ProductPage/>} />
       </Routes>
     </Provider>
   </BrowserRouter>
