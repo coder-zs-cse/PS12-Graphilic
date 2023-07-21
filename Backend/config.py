@@ -1,0 +1,1 @@
+JANUSGRAPH_SERVER = 'http://localhost:8182/gremlin'
