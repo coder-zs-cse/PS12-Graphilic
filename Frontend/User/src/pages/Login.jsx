@@ -55,7 +55,7 @@ const Login = () => {
               <div className="my-3">
                 <label htmlFor="display-4">Email address</label>
                 <input
-                  type="email"
+                  type="text"
                   className="form-control"
                   id="floatingInput"
                   placeholder="name@example.com"
