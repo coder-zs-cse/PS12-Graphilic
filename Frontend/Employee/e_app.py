@@ -28,10 +28,6 @@ app.layout = html.Div(
                 value='option1',
                 style={'fontSize': '14px', 'width': '200px'}  # Reduce the dropdown option font size and width
             ),
-        ], style={'marginBottom': 20}),  # Add some space below the dropdown
-        
-        html.Div([
-            html.Label('Select something:', style={'fontSize': '18px'}),  # Reduce the label font size
             dcc.Dropdown(
                 id='dropdown2',
                 options=[
@@ -42,10 +38,6 @@ app.layout = html.Div(
                 value='option1',
                 style={'fontSize': '14px', 'width': '200px'}  # Reduce the dropdown option font size and width
             ),
-        ], style={'marginBottom': 20}),
-
-        html.Div([
-            html.Label('Select something:', style={'fontSize': '18px'}),  # Reduce the label font size
             dcc.Dropdown(
                 id='dropdown3',
                 options=[
@@ -56,10 +48,6 @@ app.layout = html.Div(
                 value='option1',
                 style={'fontSize': '14px', 'width': '200px'}  # Reduce the dropdown option font size and width
             ),
-        ], style={'marginBottom': 20}),
-
-        html.Div([
-            html.Label('Select something:', style={'fontSize': '18px'}),  # Reduce the label font size
             dcc.Dropdown(
                 id='dropdown4',
                 options=[
@@ -70,7 +58,7 @@ app.layout = html.Div(
                 value='option1',
                 style={'fontSize': '14px', 'width': '200px'}  # Reduce the dropdown option font size and width
             ),
-        ], style={'marginBottom': 20}),
+        ], style={'display': 'flex', 'flexDirection': 'row', 'justifyContent': 'space-between', 'marginBottom': 20}),  # Align dropdowns side by side
         
         html.Div([
             dcc.Graph(
@@ -98,9 +86,7 @@ app.layout = html.Div(
                 style={'display': 'inline-block', 'width': '45%'}  # Reduce the width
             )
         ], style={'marginTop': '30px'})  # Add some vertical spacing between the graphs
-    ],
-    # Use CSS Flexbox layout to align dropdowns side by side vertically
-    style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}
+    ]
 )
 
 # Step 4: Define callbacks
