@@ -54,7 +54,7 @@ const Login = () => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ cust_id: username }), // Sending the username as JSON data
+      body: JSON.stringify({ data: username }), // Sending the username as JSON data
     })
       .then((response) => {
         if (!response.ok) {

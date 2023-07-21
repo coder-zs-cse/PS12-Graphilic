@@ -169,7 +169,7 @@ def books_by_category():
 def recommend_similar():
     try:
         data = request.get_json()
-        cust_id = data.get("cust_id")
+        cust_id = data.get("data")
         if not cust_id:
             return jsonify({"error": "Username (cust_id) not provided"}), 400
 
@@ -187,10 +187,12 @@ def recommend_similar():
         # Replace this with your actual implementation of 'get_similarity_list'
         prediction = get_similarity_list(model, cust_id, list_items)
 
-        return jsonify(*(prediction.keys())), 200
+        # Prepare the JSON response with IDs as keys and values as values
+        response = {asin: score for asin, score in prediction.items()}
+        return jsonify({"res": response}), 200
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
+        return jsonify({"error": str(e)}), 500    
 
 if __name__ == '__main__':
     app.run(debug=True)
