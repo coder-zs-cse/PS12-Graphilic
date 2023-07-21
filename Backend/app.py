@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from pymongo import MongoClient
 import re
 from flask_cors import CORS
+from query_from_janus import query_vertex_by_id
 from janusgraph_client import get_janusgraph_connection
 import pickle
 import networkx as nx
@@ -24,6 +25,8 @@ collection = client["HackRx"]["MetaData"]
 app = Flask(__name__)
 app.config.from_object('config')
 cors = CORS(app)
+
+search_ASIN = None
 
 def get_similarity_list(model,customerID,list_items):
     cust_embed = model.wv[customerID]
@@ -91,6 +94,7 @@ def handle_item_request():
 
 @app.route('/search_query', methods=['POST'])
 def search_item():
+    global search_ASIN
     try:
         data = request.json.get('data')
         if data is not None:
@@ -105,13 +109,14 @@ def search_item():
             similar_data = []
             for book in similar_books:
                 title = book["title"]
+                ASIN = book["ASIN"]
                 category = book.get("group", "")
                 categories_data = book.get("categories", {}).get("ASIN ID", [])
                 categories = [category.split('|')[-1] for category in categories_data]
 
-                similar_data.append({"title": title, "category": category, "categories": categories})
-
-            return jsonify({"query_title": query_title, "similar_books": similar_data}), 200
+                similar_data.append({"ASIN":ASIN,"title": title, "category": category, "categories": categories})
+            search_ASIN = similar_data[0]["ASIN"]
+            return jsonify({"query_title": query_title, "similar_books": similar_data, "stored": search_ASIN}), 200
         else:
             return jsonify({"error": "Invalid JSON data"}), 400
     except:
@@ -163,11 +168,9 @@ def books_by_category():
 
 @app.route('/recommend_similar', methods=['POST'])
 def recommend_similar():
-    try:
-        data = request.get_json()
-        cust_id = data.get("cust_id")
-        if not cust_id:
-            return jsonify({"error": "Username (cust_id) not provided"}), 400
+    # ASIN of the main product
+    global search_ASIN
+    main_asin = search_ASIN
 
         # Find the document for the main ASIN
         neighbours = list(graph.neighbors(cust_id))
@@ -187,18 +190,6 @@ def recommend_similar():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-@app.route('/graph-data', methods=['GET'])
-def get_graph_data():
-    connection = get_janusgraph_connection()
-    
-    try:
-        g = connection.remote_traversal()
-        # Perform your Gremlin queries using the 'g' object
-        result = g.V().limit(10).valueMap().toList()
-    finally:
-        connection.close()
-    
-    return jsonify(result)
 
 if __name__ == '__main__':
     app.run(debug=True)
