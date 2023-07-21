@@ -23,7 +23,7 @@ def update_output(value):
     # In this example, we'll simply return the value as the output.
     # You can perform any backend processing using the received value here.
     # Additionally, send the value to the backend using a POST request.
-    url = 'http://your_backend_endpoint'  # Replace with your backend endpoint URL
+    url = 'http://localhost:5000/slider'  # Replace with your backend endpoint URL
     data = {'slider_value': value}
     response = requests.post(url, json=data)
     

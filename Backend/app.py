@@ -7,7 +7,8 @@ import pickle
 import networkx as nx
 import pandas as pd
 import json
-
+alpha = 1
+beta = 0
 with open(r'C:\\Users\\Omkar Borker\\OneDrive\\Desktop\\PS12-Graphilic\\Model\\node2vec_for_bipartite.pkl','rb') as f:
     model = pickle.load(f)
 
@@ -192,8 +193,32 @@ def recommend_similar():
         return jsonify({"res": response}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500    
-
+        return jsonify({"error": str(e)}), 500
+        
+@app.route('/slider',methods=['POST'])
+def update_slider_value():
+    global alpha, beta
+    
+    try:
+        data = request.json
+        slider_value = data.get('slider_value')
+        
+        # Update global variables alpha and beta based on the slider value received
+        alpha = 100 - slider_value
+        beta = slider_value
+        print(alpha)
+        print(beta)
+        
+        # Prepare and return the response
+        response_data = {
+            'alpha': alpha,
+            'beta': beta
+        }
+        
+        return jsonify(response_data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
 if __name__ == '__main__':
     app.run(debug=True)
 
