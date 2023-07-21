@@ -12,24 +12,19 @@ app = Flask(__name__)
 app.config.from_object('config')
 
 
-@app.route('/recommend_to_user', methods=['GET', 'POST'])
+@app.route('/recommend_to_user', methods=['POST'])
 def handle_request():
-    if request.method == 'GET':
-        return jsonify({"message": "Request ""user"" successful"}), 200
-    elif request.method == 'POST':
-        try:
-            data = request.get_json()
-            received_data = data.get("data")
-            if received_data is not None:
-                ## bad request 
-                return jsonify({"error": "POST requests not allowed"}), 400
-            else:
-                ## model chages here
-                return jsonify({"message": "Request successful"}), 200
-        except:
-            return jsonify({"error": "Invalid JSON data"}), 400
-    else:
-        return jsonify({"error": "Method not allowed"}), 405
+    try:
+        data = request.json.get('data')
+        if data is not None:
+            # Bad request
+            return jsonify({"error": "POST requests not allowed"}), 200
+        else:
+            # Return the custom message for POST request
+            return jsonify({"this is a bad request"}), 400
+    except:
+        return jsonify({"error": "Invalid JSON data"}), 400
+
     
     
 @app.route('/recommend_item', methods=['GET', 'POST'])
@@ -150,5 +145,4 @@ def get_graph_data():
 if __name__ == '__main__':
     app.run(debug=True)
 
-if __name__ == '__main__':
-    app.run(debug=True)
+
