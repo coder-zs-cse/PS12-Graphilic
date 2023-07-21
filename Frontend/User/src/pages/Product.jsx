@@ -10,6 +10,7 @@ import { Footer, Navbar } from "../components";
 const Product = () => {
   const { id } = useParams();
   const [product, setProduct] = useState([]);
+  const [Rproduct, setRproduct] = useState([]);
   const [similarProducts, setSimilarProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loading2, setLoading2] = useState(false);
@@ -70,7 +71,7 @@ const Product = () => {
               <img
                 className="img-fluid"
                 src={product.image}
-                alt={product.title}
+                alt={Rproduct.title}
                 width="400px"
                 height="400px"
               />

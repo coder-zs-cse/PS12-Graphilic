@@ -63,27 +63,33 @@ def handle_item_request():
         return jsonify({"error": "Method not allowed"}), 405
     
 
-@app.route('/search_query', methods=['GET', 'POST'])
+@app.route('/search_query', methods=['POST'])
 def search_item():
-    query_title = "school"
+    try:
+        data = request.json.get('data')
+        if data is not None:
+            query_title = data.get("query_title", "")
+            # Regular expression for partial matching of the queried title
+            regex_query = re.compile(query_title, re.IGNORECASE)
 
-    # Regular expression for partial matching of the queried title
-    regex_query = re.compile(query_title, re.IGNORECASE)
+            # Find books with titles matching the partial query and limit the results to 10
+            similar_books = collection.find({"title": {"$regex": regex_query}}).limit(10)
 
-    # Find books with titles matching the partial query and limit the results to 10
-    similar_books = collection.find({"title": {"$regex": regex_query}}).limit(10)
+            # Get the book category based on the first match found
+            similar_data = []
+            for book in similar_books:
+                title = book["title"]
+                category = book.get("group", "")
+                categories_data = book.get("categories", {}).get("ASIN ID", [])
+                categories = [category.split('|')[-1] for category in categories_data]
 
-    # Get the book category based on the first match found
-    similar_data = []
-    for book in similar_books:
-        title = book["title"]
-        category = book.get("group", "")
-        categories_data = book.get("categories", {}).get("ASIN ID", [])
-        categories = [category.split('|')[-1] for category in categories_data]
+                similar_data.append({"title": title, "category": category, "categories": categories})
 
-        similar_data.append({"title": title, "category": category, "categories": categories})
-
-    return jsonify({"query_title": query_title, "similar_books": similar_data}), 200
+            return jsonify({"query_title": query_title, "similar_books": similar_data}), 200
+        else:
+            return jsonify({"error": "Invalid JSON data"}), 400
+    except:
+        return jsonify({"error": "Invalid JSON data"}), 400
 
 @app.route('/books_by_category', methods=['GET'])
 def books_by_category():
