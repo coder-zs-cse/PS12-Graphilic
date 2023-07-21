@@ -1,12 +1,15 @@
 from flask import Flask, request, jsonify
 from pymongo import MongoClient
 import re
+from janusgraph_client import get_janusgraph_connection
+
 
 MONGO_URL = "mongodb+srv://zubinshah:dbUsUK95LA6^@hackrx.dl9muyr.mongodb.net/"
 client = MongoClient(MONGO_URL)
 collection = client["HackRx"]["MetaData"]
 
 app = Flask(__name__)
+app.config.from_object('config')
 
 
 @app.route('/recommend_to_user', methods=['GET', 'POST'])
@@ -130,7 +133,22 @@ def recommend_similar():
         "similar_item_group": similar_item_group,
         "similar_item_salesrank": similar_item_salesrank
     }), 200
+    
+@app.route('/graph-data', methods=['GET'])
+def get_graph_data():
+    connection = get_janusgraph_connection()
+    
+    try:
+        g = connection.remote_traversal()
+        # Perform your Gremlin queries using the 'g' object
+        result = g.V().limit(10).valueMap().toList()
+    finally:
+        connection.close()
+    
+    return jsonify(result)
 
+if __name__ == '__main__':
+    app.run(debug=True)
 
 if __name__ == '__main__':
     app.run(debug=True)
