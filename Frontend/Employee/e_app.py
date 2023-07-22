@@ -44,11 +44,14 @@ filtered_df2 = filtered_df2.reset_index()
 # print(filtered_df2[:5])
 
 #store day in x
-x = filtered_df['day']
+x = filtered_df1['day'].tolist()
 #store count of reviews in UserCount
 UserCount = filtered_df1['Count'].tolist()
 #store average profit in OverallProfit
 OverallProfit = filtered_df2['Profit'].tolist()
+print(x)
+print(UserCount)
+print(OverallProfit)
 
 
 # Get unique days and years from the data
@@ -56,8 +59,9 @@ available_days = filtered_df1['day']
 #sort available days
 # sorted(available_days)
 
-available_years = df['year']
-
+available_years = df['year'].unique()
+available_cat = df['group'].unique()
+print(">",available_cat)
 # ------------------------------------------------------------------------------
 # App layout
 app.layout = html.Div([
@@ -69,19 +73,21 @@ app.layout = html.Div([
                      options=[{"label": str(day), "value": day} for day in available_days],
                      multi=False,
                      value=available_days[0],
-                     style={'width': "100%"}
+                     style={'width': "100%",'margin':'0px 30px 0px 30px'}
                      ),
         dcc.Dropdown(id="slct_month",
+                     options=[{"label": str(cat), "value": cat} for cat in available_cat],
                      multi=False,
-                     style={'width': "100%"}
+                     value=12,
+                     style={'width': "100%",'margin':'0px 30px 0px 30px'}
                      ),
         dcc.Dropdown(id="slct_year",
                      options=[{"label": str(year), "value": year} for year in available_years],
                      multi=False,
-                     value=available_years[0],
-                     style={'width': "100%"}
+                     value=1999,
+                     style={'width': "100%",'margin':'0px 30px 0px 30px'}
                      ),
-    ], style={'display': 'inline-block', 'width': '30%'}),
+    ], style={'display': 'flex','width': '30%'}),
 
     html.Div(id='output_container', children=[]),
     html.Br(),
@@ -130,30 +136,6 @@ def update_graph(selected_day, selected_month, selected_year):
 
     return fig
 
-
-# ------------------------------------------------------------------------------
-# Add callback for the second graph (replace 'my_another_chart' with the actual ID of the new graph)
-@app.callback(
-    Output(component_id='my_another_chart', component_property='figure'),
-    [Input(component_id='slct_day', component_property='value'),
-     Input(component_id='slct_month', component_property='value'),
-     Input(component_id='slct_year', component_property='value')]
-)
-def update_another_graph(selected_day, selected_month, selected_year):
-    container = f"The day, month, and year chosen by the user are: {selected_day}, {selected_month}, {selected_year}"
-
-    dff = df[(df["day"] == selected_day) & (df["month"] == selected_month) & (df["year"] == selected_year)]
-
-    # Example: Create another Plotly Express chart for the second graph
-    fig = px.scatter(
-        data_frame=dff,
-        x='day',  # Replace 'day' with the appropriate column from your data for the X-axis
-        y='some_other_column',  # Replace 'some_other_column' with the appropriate column for the Y-axis
-        labels={'day': 'Day', 'some_other_column': 'Some Other Data'},
-        template='plotly_dark'
-    )
-
-    return fig
 
 
 # ------------------------------------------------------------------------------
