@@ -10,15 +10,15 @@ import pandas as pd
 import json
 alpha = 20
 beta = 80
-with open(r'C:\\Users\\Omkar Borker\\OneDrive\\Desktop\\PS12-Graphilic\\Model\\node2vec_for_bipartite.pkl','rb') as f:
+with open(r'D:\\Projects\\Hackx\\PS12-Graphilic\\Model\\node2vec_for_bipartite.pkl','rb') as f:
     model = pickle.load(f)
 
-with open(r'C:\\Users\\Omkar Borker\\OneDrive\\Desktop\\PS12-Graphilic\\Data\\user_user_graph.json','rb') as f:
+with open(r'D:\\Projects\\Hackx\\PS12-Graphilic\Data\\user_user_graph.json','rb') as f:
     data = json.load(f)
 graph = nx.node_link_graph(data)
 
-dataset = pd.read_csv(r"C:\\Users\\Omkar Borker\\OneDrive\\Desktop\\PS12-Graphilic\\Data\\user-user-dataframe.csv")
-priceset = pd.read_csv(r"C:\\Users\\Omkar Borker\\OneDrive\\Desktop\\PS12-Graphilic\\Data\\new_data_profit.csv")
+dataset = pd.read_csv(r"D:\\Projects\\Hackx\\PS12-Graphilic\Data\\user-user-dataframe.csv")
+priceset = pd.read_csv(r"D:\\Projects\\Hackx\\PS12-Graphilic\Data\\new_data_profit.csv")
 
 MONGO_URL = "mongodb+srv://zubinshah:dbUsUK95LA6^@hackrx.dl9muyr.mongodb.net/"
 client = MongoClient(MONGO_URL)
@@ -107,22 +107,29 @@ def handle_request():
 
     
     
-@app.route('/recommend_item', methods=['GET', 'POST'])
+@app.route('/recommend_item', methods=['POST'])
 def handle_item_request():
-    if request.method == 'GET':
-        return jsonify({"message": "Request ""item"" successful"}), 200
-    elif request.method == 'POST':
-        try:
-            data = request.get_json()
-            received_data = data.get("data")
-            if received_data is not None:
-                ## bad request 
-                return jsonify({"error": "POST requests not allowed"}), 400
-            else:
-                ## model chages here
-                return jsonify({"message": "Request successful"}), 200
-        except:
-            return jsonify({"error": "Invalid JSON data"}), 400
+    try:
+        data = request.get_json()
+        # print(data)
+        received_data = data.get('data')
+        # print(received_data)
+        if received_data is None:
+            ## bad request 
+            return jsonify({"error": "POST requests not allowed"}), 400
+        else:
+            ## model chages here
+            similar_asins = query_vertex_by_id(received_data)
+            print(similar_asins)
+            # similar_data =[]
+            # for asin in similar_asins:
+            #     query_result = collection.find_one({"ASIN": asin})
+            #     print("query:",query_result)
+            #     if query_result is not None:
+            #         similar_data.append(query_result)
+            return jsonify({"message": "Request successful", "ASINs": similar_asins}), 200
+    except:
+        return jsonify({"error": "Invalid JSON data"}), 400
     else:
         return jsonify({"error": "Method not allowed"}), 405
     
