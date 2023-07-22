@@ -2,6 +2,8 @@ import dash
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import requests
+from datetime import datetime as dt
 
 from dash import Dash, dcc, html, Input, Output
 
@@ -13,8 +15,8 @@ reviews_data = reviews_data.sort_values(by=['day'])
 
 dayOptions, monthOptions, yearOptions, categoryOptions = load_options.load_options(reviews_data)
 
-
-
+profit_data = reviews_data
+profit_data['datetime'] = pd.to_datetime(profit_data[['year', 'month', 'day']])
 
 
 
@@ -70,14 +72,37 @@ app.layout = html.Div([
             dcc.Graph(id='my_another_chart'),  # Replace 'my_another_chart' with your desired ID for the new chart
 
 
-        ],className='bargraph',style={'width':'50%','height':'500px','margin':'30px','color':'white','background-color':'#1E1E1E'}),
-        html.Div([],className='linegraph',style={'width':'50%','height':'500px','margin':'30px','color':'white','background-color':'#1B1B1B'}),
+        ],className='bargraph',style={'width':'50%','height':'500px','margin':'30px'}),
+        html.Div([
+
+            html.H1("Company Profit over datetime", style={'text-align': 'center'}),
+            dcc.DatePickerRange(
+                id='date-range',
+                start_date=dt(2000, 6, 1),
+                end_date=dt(2000, 6, 30),
+                display_format='YYYY-MM-DD',
+                style={'margin': 'auto'}
+            ),
+            dcc.Graph(id='profit-graph')
+
+
+        ],className='linegraph',style={'width':'50%','height':'500px','margin':'30px'}),
 
     ],style={'display':'flex'}),
 
 
 
-    html.Div([],className='slider',style={'width':'90%','height':'50px','margin':'0px auto','color':'white','background-color':'#4E4E4E'}),
+    html.Div([
+        dcc.Slider(
+            id='slider-component',
+            min=0,
+            max=100,
+            step=5,
+            value=50,
+            
+        ),
+        html.Div(id='output-container')
+    ],className='slider',style={'width':'50%','height':'50px','margin':'20px auto'}),
 
 
 
@@ -104,7 +129,7 @@ app.layout = html.Div([
                     value=2000,
                     style={'width': '50%', 'margin': 'auto'}
                 ),
-            ],style={'display':'flex'}),
+            ],style={'display':'flex','margin':'40px'}),
 
             dcc.Graph(id='heatmap-graph'),
         ],className='heatmap',style={'width':'50%'}),
@@ -118,11 +143,77 @@ app.layout = html.Div([
 
 
 
-        ],className='piechart',style={'width':'50%','height':'500px','margin':'30px'}),
+        ],className='piechart',style={'width':'50%','height':'500px','margin':'110px'}),
 
     ],style={'display':'flex'}),
 
 ])
+
+
+@app.callback(
+    Output('profit-graph', 'figure'),
+    [Input('group-dropdown', 'value'),
+     Input('date-range', 'start_date'),
+     Input('date-range', 'end_date')]
+)
+def update_graph(selected_group, start_date, end_date):
+    start_date = pd.to_datetime(start_date)
+    end_date = pd.to_datetime(end_date)
+
+    filtered_data = profit_data[
+        (profit_data['group'] == selected_group) &
+        (profit_data['datetime'] >= start_date) &
+        (profit_data['datetime'] <= end_date)
+    ]
+
+    # Create the graph using plotly.graph_objects
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=filtered_data['datetime'],
+        y=filtered_data['profit'],
+        mode='markers+lines',
+        marker=dict(size=8, color='purple', line=dict(width=2, color='DarkSlateGrey')),
+        line=dict(width=2, color='purple'),
+        name='Profit'
+    ))
+
+    fig.update_layout(
+        xaxis=dict(title='Datetime'),
+        yaxis=dict(title='Profit'),
+        title=f'Company Profit over datetime in {selected_group}',
+        template='plotly_dark',
+        showlegend=True
+    )
+
+    return fig
+
+
+
+
+
+@app.callback(
+    Output('output-container', 'children'),
+    Input('slider-component', 'value')
+)
+def update_output(value):
+    # In this example, we'll simply return the value as the output.
+    # You can perform any backend processing using the received value here.
+    # Additionally, send the value to the backend using a POST request.
+    url = 'http://localhost:5000/slider'  # Replace with your backend endpoint URL
+    data = {'slider_value': value}
+    response = requests.post(url, json=data)
+    
+    if response.status_code == 200:
+        return f'Slider Value: {value} (Successfully sent to backend)'
+    else:
+        return f'Slider Value: {value} (Failed to send to backend)'
+
+
+
+
+
+
+
 
 
 @app.callback(
