@@ -6,7 +6,7 @@ const SearchResults = ({ searchResults }) => {
     <div className="search-results-container">
       <h2>Search Results</h2>
       {searchResults.map((result, index) => (
-        <Link to={`/ProductPage/${result.id}`} key={index} className="product-link">
+        <Link to={`/ProductPage/${result.id}`} key={index} className="product-link" >
           <div className="search-result">
             <img
               src={`https://placeimg.com/200/300/book?${index}`}
