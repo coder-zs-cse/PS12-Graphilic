@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from collections import OrderedDict
 from pymongo import MongoClient
 import re
 from flask_cors import CORS
@@ -7,8 +8,8 @@ import pickle
 import networkx as nx
 import pandas as pd
 import json
-alpha = 100
-beta = 0
+alpha = 20
+beta = 80
 with open(r'C:\\Users\\Omkar Borker\\OneDrive\\Desktop\\PS12-Graphilic\\Model\\node2vec_for_bipartite.pkl','rb') as f:
     model = pickle.load(f)
 
@@ -69,6 +70,12 @@ def get_similarity_list(model,customerID,list_items):
         except KeyError:
             continue
     return final_items
+
+def custom_sort(items, alpha, beta,profit_values):
+    sorted_items = sorted(items.items(), key=lambda x: alpha * x[1] + beta * profit_values[x[0]], reverse=True)
+    
+    return sorted_items
+
 
 @app.route('/login', methods=['POST'])
 def handle_login_request():
@@ -215,10 +222,19 @@ def recommend_similar():
         # Retrieve the ASIN IDs of similar items from the "similar" column
         # Replace this with your actual implementation of 'get_similarity_list'
         prediction = get_similarity_list(model, cust_id, list_items)
+        print(prediction)
         profit_values = get_profit_values(prediction)
-        print(profit_values)
+        combined_dict = {asin: alpha * prediction[asin] + beta * profit_values[asin] for asin in prediction}
+        # Sort the combined dictionary based on the calculated values
+        sorted_combined = custom_sort(combined_dict, alpha, beta,profit_values)
+
+        # Display the sorted ASINs and their corresponding calculated values
+        for asin, calculated_value in sorted_combined:
+            print(f"ASIN: {asin}, Calculated Value: {calculated_value}")   
+        sorted_combined_dict = OrderedDict(sorted_combined)
         # Prepare the JSON response with IDs as keys and values as values
-        response = {asin: score for asin, score in prediction.items()}
+        response = {asin: score for asin, score in sorted_combined_dict.items()}
+        print(response)
         return jsonify({"res": response}), 200
 
     except Exception as e:
