@@ -1,6 +1,8 @@
+import dash
 import pandas as pd
 import plotly.express as px
 from dash import Dash, dcc, html, Input, Output
+
 
 
 x = []
@@ -16,6 +18,7 @@ app = Dash(__name__)
 
 # -- Import and clean data (importing csv into pandas)
 # df = pd.read_csv("intro_bees.csv")
+reviews_data = pd.read_csv('../../Data/reviews1_data.csv')
 file_path = '../../Data/reviews1_data.csv'
 df = pd.read_csv(file_path)
 
@@ -91,10 +94,7 @@ app.layout = html.Div([
 
     html.Div(id='output_container', children=[]),
     html.Br(),
-
-    dcc.Graph(id='my_profit_chart'),  # Bar chart for profit
-
-    # Add another graph vertically beside the first graph
+    html.Div(id='heatmap-graph'),
     dcc.Graph(id='my_another_chart'),  # Replace 'my_another_chart' with your desired ID for the new chart
 
 ])
@@ -103,8 +103,9 @@ app.layout = html.Div([
 # ------------------------------------------------------------------------------
 # Connect the Plotly graphs with Dash Components
 @app.callback(
-    Output('slct_month', 'options'),
+    Output('my_another_chart', 'options'),
     [Input('slct_day', 'value'),
+     Input('slct_month', 'value'),
      Input('slct_year', 'value')]
 )
 def update_month_dropdown(selected_day, selected_year):
@@ -114,12 +115,6 @@ def update_month_dropdown(selected_day, selected_year):
     return month_options
 
 
-@app.callback(
-    Output(component_id='my_profit_chart', component_property='figure'),
-    [Input(component_id='slct_day', component_property='value'),
-     Input(component_id='slct_month', component_property='value'),
-     Input(component_id='slct_year', component_property='value')]
-)
 def update_graph(selected_day, selected_month, selected_year):
     container = f"The day, month, and year chosen by the user are: {selected_day}, {selected_month}, {selected_year}"
 
@@ -136,8 +131,118 @@ def update_graph(selected_day, selected_month, selected_year):
 
     return fig
 
+@app.callback(
+    Output('heatmap-graph', 'figure'),
+    [Input('group-dropdown', 'value'),
+     Input('month-dropdown', 'value'),
+     Input('year-dropdown', 'value')]
+)
+def update_heatmap(selected_group, selected_month, selected_year):
+
+    heatmap_data = reviews_data[
+        (reviews_data['group'] == selected_group) &
+        (reviews_data['year'] == selected_year) &
+        (reviews_data['month'] == selected_month)
+    ].groupby('rating')['helpful'].mean().reset_index()
+
+    # Create the heatmap using plotly.graph_objects
+    fig = go.Figure(go.Heatmap(
+        x=heatmap_data['rating'],
+        y=[0],  # Y-axis is set to [0] to have a 1D heatmap
+        z=[heatmap_data['helpful']],
+        colorscale='Viridis',
+        hoverongaps=False,
+    ))
+
+    fig.update_layout(
+        xaxis=dict(title='Rating'),
+        yaxis=dict(title=''),  # Empty y-axis label
+        title='Heatmap of Ratings In Current Trends',
+        template='plotly_dark',
+        showlegend=False
+    )
+
+    return fig
 
 
 # ------------------------------------------------------------------------------
+if __name__ == '__main__':
+    app.run_server(debug=True)
+
+import pandas as pd
+import plotly.graph_objects as go
+from dash import Dash, dcc, html, Input, Output
+from datetime import datetime as dt
+
+# Load the profit data from a CSV file (change the file path accordingly)
+profit_data = pd.read_csv('../../Data/reviews1_data.csv')
+
+# Assuming the data has the following columns: year, month, day, profit
+
+# Convert the 'time' column to a pandas datetime object
+profit_data['datetime'] = pd.to_datetime(profit_data[['year', 'month', 'day']])
+
+# Create a Dash application
+app = Dash(__name__)
+
+# Define the app layout
+app.layout = html.Div([
+    html.H1("Company Profit over datetime", style={'text-align': 'center'}),
+    dcc.Dropdown(
+        id='group-dropdown',
+        options=[{'label': group, 'value': group} for group in profit_data['group'].unique()],
+        value='Book',
+        style={'width': '50%', 'margin': 'auto'}
+    ),
+    dcc.DatePickerRange(
+        id='date-range',
+        start_date=dt(2000, 6, 1),
+        end_date=dt(2000, 6, 30),
+        display_format='YYYY-MM-DD',
+        style={'margin': 'auto'}
+    ),
+    dcc.Graph(id='profit-graph')
+])
+
+
+# Define the callback to update the graph
+@app.callback(
+    Output('profit-graph', 'figure'),
+    [Input('group-dropdown', 'value'),
+     Input('date-range', 'start_date'),
+     Input('date-range', 'end_date')]
+)
+def update_graph(selected_group, start_date, end_date):
+    start_date = pd.to_datetime(start_date)
+    end_date = pd.to_datetime(end_date)
+
+    filtered_data = profit_data[
+        (profit_data['group'] == selected_group) &
+        (profit_data['datetime'] >= start_date) &
+        (profit_data['datetime'] <= end_date)
+    ]
+
+    # Create the graph using plotly.graph_objects
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=filtered_data['datetime'],
+        y=filtered_data['profit'],
+        mode='markers+lines',
+        marker=dict(size=8, color='purple', line=dict(width=2, color='DarkSlateGrey')),
+        line=dict(width=2, color='purple'),
+        name='Profit'
+    ))
+
+    fig.update_layout(
+        xaxis=dict(title='Datetime'),
+        yaxis=dict(title='Profit'),
+        title=f'Company Profit over datetime in {selected_group}',
+        template='plotly_dark',
+        showlegend=True
+    )
+
+    return fig
+
+
 if __name__ == '__main__':
     app.run_server(debug=True)
