@@ -7,7 +7,7 @@ import pickle
 import networkx as nx
 import pandas as pd
 import json
-alpha = 1
+alpha = 100
 beta = 0
 with open(r'C:\\Users\\Omkar Borker\\OneDrive\\Desktop\\PS12-Graphilic\\Model\\node2vec_for_bipartite.pkl','rb') as f:
     model = pickle.load(f)
@@ -17,6 +17,7 @@ with open(r'C:\\Users\\Omkar Borker\\OneDrive\\Desktop\\PS12-Graphilic\\Data\\us
 graph = nx.node_link_graph(data)
 
 dataset = pd.read_csv(r"C:\\Users\\Omkar Borker\\OneDrive\\Desktop\\PS12-Graphilic\\Data\\user-user-dataframe.csv")
+priceset = pd.read_csv(r"C:\\Users\\Omkar Borker\\OneDrive\\Desktop\\PS12-Graphilic\\Data\\new_data_profit.csv")
 
 MONGO_URL = "mongodb+srv://zubinshah:dbUsUK95LA6^@hackrx.dl9muyr.mongodb.net/"
 client = MongoClient(MONGO_URL)
@@ -27,6 +28,33 @@ app.config.from_object('config')
 cors = CORS(app)
 
 search_ASIN = None
+
+def get_profit_values(similarity_dict):
+    # Read the CSV file containing the profit data
+    print(similarity_dict)
+    # Create a dictionary to store the profit values corresponding to keys in the similarity dictionary
+    profit_values = {}
+
+    # Iterate through the keys in the similarity dictionary
+    for key in similarity_dict.keys():
+        # Get the similarity value from the similarity dictionary
+        similarity_value = similarity_dict[key]
+
+        # Search for the corresponding key in the CSV file
+        matching_rows = priceset.loc[priceset['ASIN'] == key]
+
+        # Check if the key exists in the DataFrame and if it has at least one matching row
+        if not matching_rows.empty:
+            # Get the profit value from the first matching row in the DataFrame
+            profit_value = matching_rows['Profit'].iloc[0]
+
+            # Store the profit value in the profit_values dictionary
+            profit_values[key] = profit_value
+        else:
+            # If the key is not found in the DataFrame, set the profit value to None or any default value
+            profit_values[key] = None
+
+    return profit_values
 
 def get_similarity_list(model,customerID,list_items):
     cust_embed = model.wv[customerID]
@@ -168,12 +196,12 @@ def books_by_category():
 
 @app.route('/recommend_similar', methods=['POST'])
 def recommend_similar():
+    global alpha,beta
     try:
         data = request.get_json()
         cust_id = data.get("data")
         if not cust_id:
             return jsonify({"error": "Username (cust_id) not provided"}), 400
-
         # Find the document for the main ASIN
         neighbours = list(graph.neighbors(cust_id))
         list_items = []
@@ -187,7 +215,8 @@ def recommend_similar():
         # Retrieve the ASIN IDs of similar items from the "similar" column
         # Replace this with your actual implementation of 'get_similarity_list'
         prediction = get_similarity_list(model, cust_id, list_items)
-
+        profit_values = get_profit_values(prediction)
+        print(profit_values)
         # Prepare the JSON response with IDs as keys and values as values
         response = {asin: score for asin, score in prediction.items()}
         return jsonify({"res": response}), 200
