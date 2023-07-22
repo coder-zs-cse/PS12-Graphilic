@@ -26,6 +26,7 @@ profit_data['datetime'] = pd.to_datetime(profit_data[['year', 'month', 'day']])
 
 
 
+
 import heatmap 
 
 
@@ -69,7 +70,7 @@ app.layout = html.Div([
                             ),
             ], style={'display': 'flex','width': '30%','margin':'20px'}),
             
-            dcc.Graph(id='my_another_chart'),  # Replace 'my_another_chart' with your desired ID for the new chart
+            dcc.Graph(id='bar-chart'),  # Replace 'my_another_chart' with your desired ID for the new chart
 
 
         ],className='bargraph',style={'width':'50%','height':'500px','margin':'30px'}),
@@ -148,6 +149,44 @@ app.layout = html.Div([
     ],style={'display':'flex'}),
 
 ])
+
+@app.callback(
+    Output(component_id='bar-chart', component_property='figure'),
+    [Input(component_id='slct_day', component_property='value'),
+     Input(component_id='slct_group', component_property='value'),
+     Input(component_id='slct_year', component_property='value')]
+)
+def update_another_graph(selected_day, selected_month, selected_year):
+    container = f"The day, month, and year chosen by the user are: {selected_day}, {selected_month}, {selected_year}"
+    df = reviews_data
+    dff = df[(df["day"] == selected_day) & (df["group"] == selected_month) & (df["year"] == selected_year)]
+
+    filtered_df = dff
+    filtered_df = filtered_df.sort_values(by=['day'])
+    #group by day and get average profit and total count of reviews
+
+    filtered_df1 = filtered_df.groupby('day')['profit'].count().rename('Count')
+    filtered_df2 = filtered_df.groupby('day')['profit'].mean().rename('Profit')
+
+    filtered_df = filtered_df.reset_index()
+    filtered_df1 = filtered_df1.reset_index()
+    filtered_df2 = filtered_df2.reset_index()
+
+    days = filtered_df1['day'].tolist()
+    #store count of reviews in UserCount
+    UserCount = filtered_df1['Count'].tolist()
+    #store average profit in OverallProfit
+    # OverallProfit = filtered_df2['Profit'].tolist()
+    # Example: Create another Plotly Express chart for the second graph
+    fig = px.scatter(
+        data_frame=dff,
+        x='day',  # Replace 'day' with the appropriate column from your data for the X-axis
+        y=UserCount,  # Replace 'some_other_column' with the appropriate column for the Y-axis
+        labels={'day': 'Day', 'some_other_column': 'Some Other Data'},
+        template='plotly_dark'
+    )
+
+    return fig
 
 
 @app.callback(
