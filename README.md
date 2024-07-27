@@ -1,10 +1,12 @@
 # Graph Learning Based Recommendation System
 
-Description
+## Description
 
 This project implements a recommendation system leveraging Graph Learning techniques, specifically random walk and Node2Vec algorithms. It analyzes user-item interactions and user relationships within a bipartite graph to generate personalized recommendations.
 
-Technologies
+![flow_chart](https://github.com/user-attachments/assets/7cf133cc-6c98-4043-a86e-0aa37a420c74)
+
+## Technologies
 
 - Frontend: React
 - Backend: Flask (Python)
